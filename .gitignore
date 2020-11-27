@@ -1,0 +1,6 @@
+*.env
+*.pem
+filebeat.yml
+inventory
+sensitive.yml
+default.yml

@@ -1,0 +1,70 @@
+#################################################
+
+---
+    - hosts: app
+      become: true
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+      vars_files:
+        - vars/sensitive.yml
+
+      tasks:
+
+        - name: Allow port range from api gateway to allow for inbound traffic to docker containers
+          ufw:
+           rule: allow
+           direction: in
+           from_ip: "{{ api_fvh_fi }}"
+           to_port: 1220:1230
+           proto: tcp
+
+        - name: clone app repositories
+          git:
+            repo: 'https://github.com/sheenacodes/{{ item.repo }}.git'
+            dest: /root/platform_endpoints/{{ item.repo }}
+            version: "{{ item.tag }}"
+          loop:
+            - { repo: 'fvh_sentilonoise_in', tag: 'HEAD' }
+            - { repo: 'fvh_peoplecounter_in', tag: 'HEAD' }
+            - { repo: 'fvh_solarinverter_in', tag: 'HEAD' }
+            - { repo: 'fvh_postgres_out', tag: 'HEAD' }
+            - { repo: 'fvh_movingvehicle_in', tag: 'HEAD' }
+            - { repo: 'fvh_lvdt_in', tag: 'dataformat' }
+            - { repo: 'fvh_sta_datastreams', tag: 'HEAD' }
+            - { repo: 'fvh_kafka_observations', tag: 'HEAD' }
+            - { repo: 'fvh_buschargers_in', tag: 'HEAD' }
+
+        - name: Copy a config files to remote machine
+          copy:
+            src: '{{ item.src }}'
+            dest: '{{ item.dest }}'
+            remote_src: no
+          loop:
+            - { src: config/app_config.env, dest:  /root/platform_endpoints/config.env }
+            - { src: nginx/, dest: /root/platform_endpoints/nginx/}
+            - { src: docker-compose.prod.yml, dest: /root/platform_endpoints/docker-compose.yml}
+            - { src: filebeat.yml, dest: /root/platform_endpoints/filebeat.yml}
+
+        - name: Copy a pem file to every source end point app container
+          copy:
+            src: /Users/sheena.puthanpurayil/ansible_app_server/config/chain.pem
+            dest: /root/platform_endpoints/{{ item }}/platform_in/chain.pem
+            remote_src: no
+          loop: ['fvh_peoplecounter_in','fvh_kafka_observations', 'fvh_buschargers_in']
+
+        - name: docker-compose down
+          docker_compose:
+            project_src: /root/platform_endpoints/
+            state: absent
+
+        - name: docker-compose up
+          docker_compose:
+            project_src: /root/platform_endpoints/
+            build: yes
+            debug: yes
+          register: output
+
+        - debug:
+            var: output
+
+

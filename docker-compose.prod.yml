@@ -1,0 +1,125 @@
+version: '3'
+
+services:
+
+  buschargers_in_api:
+    build:
+        context: ./fvh_buschargers_in/platform_in/
+        dockerfile: Dockerfile.prod
+    restart: always
+    expose:
+      - 5000
+    env_file:
+      - ./config.env
+
+  lvdt_in_api:
+    build:
+        context: ./fvh_lvdt_in/platform_in/
+        dockerfile: Dockerfile.prod
+    command: gunicorn --bind 0.0.0.0:5000 manage:app
+    volumes:
+        - ./fvh_lvdt_in/platform_in/:/project/
+    expose:
+      - 5000
+    env_file:
+      - ./config.env
+
+  movingvehicle_in_api:
+    build:
+        context: ./fvh_movingvehicle_in/platform_in/
+        dockerfile: Dockerfile.prod
+    restart: always
+    expose:
+      - 5000
+    env_file:
+      - ./config.env
+
+  observations_out_api:
+    build:
+        context: ./fvh_postgres_out/platform_out/
+        dockerfile: Dockerfile.prod
+    restart: always
+    expose:
+      - 5000
+    env_file:
+      - ./config.env
+
+  solarinverter_in_api:
+    build:
+        context: ./fvh_solarinverter_in/platform_in/
+        dockerfile: Dockerfile.prod
+    restart: always
+    expose:
+      - 5000
+    env_file:
+      - ./config.env
+
+  peoplecounter_in_api:
+    build:
+        context: ./fvh_peoplecounter_in/platform_in/
+        dockerfile: Dockerfile.prod
+    restart: always
+    expose:
+      - 5000
+    env_file:
+      - ./config.env
+
+  sentilonoise_in_api:
+    build:
+        context: ./fvh_sentilonoise_in/platform_in/
+        dockerfile: Dockerfile.prod
+    restart: always
+    expose:
+      - 5000
+    env_file:
+      - ./config.env
+
+  st_datastreams_api:
+    build:
+        context: ./fvh_sta_datastreams/platform_out/
+        dockerfile: Dockerfile.prod
+    restart: always
+    expose:
+      - 5000
+    env_file:
+      - ./config.env
+
+  st_observations_api:
+    build:
+        context: ./fvh_kafka_observations/platform_in/
+        dockerfile: Dockerfile.prod
+    restart: always
+    expose:
+      - 5000
+    env_file:
+      - ./config.env
+
+  nginx:
+    build: ./nginx
+    ports:
+      - 1220:1220
+      - 1221:1221
+      - 1222:1222
+      - 1223:1223
+      - 1224:1224
+      - 1225:1225
+      - 1227:1227
+    depends_on:
+      - sentilonoise_in_api
+      - peoplecounter_in_api
+      - solarinverter_in_api
+      - observations_out_api
+      - movingvehicle_in_api
+      - lvdt_in_api
+      - st_observations_api
+      - st_datastreams_api
+      - buschargers_in_api
+
+#   filebeat:
+#     image: "docker.elastic.co/beats/filebeat:7.2.0"
+#     user: root
+#     volumes:
+#         - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+#         - /var/lib/docker:/var/lib/docker:ro
+#         - /var/run/docker.sock:/var/run/docker.sock
+
